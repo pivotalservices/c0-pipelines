@@ -1,0 +1,19 @@
+---
+resources:
+- name: my-pipelines
+  type: concourse-pipeline
+  source: ((pipelines_source))
+resources:
+- name: pipelines-src
+  type: git
+  #example source:
+  # uri: https://github.com/pivotalservices/c0-pipelines
+  source: 
+    ((pipelines_source)) 
+jobs:
+- name: set-my-pipelines
+  plan:
+  - get: pipelines-src
+  - put: my-pipelines
+    params:
+      pipelines_file: pipelines-src/pipelines.yml
