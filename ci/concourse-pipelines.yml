@@ -1,19 +1,22 @@
 ---
+resource_types:
+- name: concourse-pipeline
+  type: docker-image
+  source:
+    repository: concourse/concourse-pipeline-resource
 resources:
-- name: my-pipelines
+- name: concourse
   type: concourse-pipeline
-  source: ((pipelines_source))
-resources:
+  source: ((concourse_source))
 - name: pipelines-src
   type: git
   #example source:
   # uri: https://github.com/pivotalservices/c0-pipelines
-  source: 
-    ((pipelines_source)) 
+  source: ((pipelines_source)) 
 jobs:
 - name: set-my-pipelines
   plan:
   - get: pipelines-src
-  - put: my-pipelines
+  - put: concourse
     params:
       pipelines_file: pipelines-src/pipelines.yml

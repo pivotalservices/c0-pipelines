@@ -1,7 +1,11 @@
-source:
+concourse_source: 
   target: ((concourse_url))
-    insecure: ((concourse_insecure))
-    teams:
-    - name: main
-      username: ((main_concourse_username))
-      password: ((main_concourse_password))
+  insecure: ((concourse_insecure)) # If using vault make sure this is a string type not bool
+  teams:
+  - name: main
+    username: ((concourse_main_username))
+    password: ((concourse_main_password))
+
+pipelines_source: 
+  uri: ((pipelines_url))
+

@@ -1,6 +1,6 @@
 pipelines:
 - name: hello-world
   team: main
-  config_file:pipelines-src/hello-world/pipeline.yml 
+  config_file: pipelines-src/hello-world/pipeline.yml 
   vars_files:
   - pipelines-src/hello-world/params.yml
