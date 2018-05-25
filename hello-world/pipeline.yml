@@ -10,5 +10,5 @@ jobs:
       params:
         HELLO_VAR: ((hello_thing))
       run:
-        path: echo
-        args: ["Hello, $HELLO_VAR!"]
+        path: sh
+        args: ["echo", ""Hello, $HELLO_VAR !"]
