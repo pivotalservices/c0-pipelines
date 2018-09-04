@@ -4,3 +4,9 @@ pipelines:
   config_file: pipelines-src/hello-world/pipeline.yml 
   vars_files:
   - pipelines-src/hello-world/params.yml
+- name: haas-108-install
+  team: haas-108
+  config_file: pipelines-src/haas-108-automation/pipeline.yml 
+  vars_files:
+  - pipelines-src/haas-108-automation/params.yml
+
