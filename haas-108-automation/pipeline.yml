@@ -1,0 +1,358 @@
+
+  type: docker-image
+  source:
+    repository: pivotalservices/file-downloader-resource
+
+resources:
+- name: pivnet-files
+  type: file-downloader
+  source:
+    config_provider: git
+    path: {{version_root}}
+    file_provider: pivnet
+    version_root: {{version_root}}
+    uri: git@github.com:pivotalservices/c0-platform-automation.git
+    private_key: {{git_private_key}}
+    branch: master
+    pivnet_token: {{pivnet_token}}
+
+- name: platform-automation-config
+  type: git
+  source:
+    uri: git@github.com:pivotalservices/c0-platform-automation.git
+    private_key: {{git_private_key}}
+    paths: [{{environment_root}}]
+
+- name: pipeline-utilities
+  type: git
+  source:
+    uri: https://github.com/pivotalservices/pipeline-utilities.git
+
+- name: tile-config-generator
+  type: git
+  source:
+    uri: https://github.com/pivotalservices/tile-config-generator.git
+
+- name: platform-automation-image
+  type: docker-image
+  source:
+    repository: pivotalservices/platform-automation
+    tag: 0.0.1-rc.123
+
+jobs:
+- name: create-opsman-vm
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+    - get: pipeline-utilities
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+    - get: image
+      resource: pivnet-files
+      params:
+        product: opsman
+  - aggregate:
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+    - task: create-opsman-secrets
+      file: pipeline-utilities/tasks/create-product-secrets.yml
+      params:
+        PRODUCT_vcenter_password: {{vcenter_password}}
+        PRODUCT_opsman_ssh_password: {{opsman_ssh_password}}
+
+  - task: create-opsman-vm
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/create-vm.yml
+    input_mapping:
+      config: platform-automation-config
+      vars: platform-automation-config
+      state: platform-automation-config
+    params:
+      VARS_FILES: {{opsman_vars_files}}
+      OPSMAN_CONFIG_FILE: {{opsman_config_file}}
+
+
+- name: configure-director
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+    - get: pipeline-utilities
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+
+  - aggregate:
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: configure-authentication
+    image: platform-automation-image
+    attempts: 20
+    file: platform-automation-tasks/tasks/configure-authentication.yml
+
+  - task: create-director-secrets
+    file: pipeline-utilities/tasks/create-product-secrets.yml
+    params:
+      PRODUCT_vcenter_password: {{vcenter_password}}
+
+  - task: configure-director
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-director.yml
+    input_mapping:
+      config: platform-automation-config
+      vars: platform-automation-config
+    params:
+      VARS_FILES: {{director_vars_files}}
+      DIRECTOR_CONFIG_FILE: {{director_config_file}}
+
+  - task: apply-director-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-director-changes.yml
+- name: configure-nsxt
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+      trigger: true
+      passed: [configure-director]
+    - get: pipeline-utilities
+    - get: tile-config-generator
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+    - get: VMware-NSX-T
+      resource: pivnet-files
+      params:
+        product: vmware-nsx-t
+
+  - aggregate:
+    - task: create-product-secrets
+      file: pipeline-utilities/tasks/create-product-secrets.yml
+      params:
+        PRODUCT_credhub_key_encryption_passwords_0/key: {{credhub_key_encryption_password}}
+        PRODUCT_networking_poe_ssl_certs_0/certificate: {{wildcard_pem}}
+        PRODUCT_networking_poe_ssl_certs_0/privatekey: {{wildcard_private_key}}
+        PRODUCT_uaa/service_provider_key_credentials/certificate: {{wildcard_pem}}
+        PRODUCT_uaa/service_provider_key_credentials/privatekey: {{wildcard_private_key}}
+
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: product-config
+    file: tile-config-generator/tasks/product-config-with-errands.yml
+    input_mapping:
+      product: VMware-NSX-T
+
+  - task: upload-and-stage
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    params:
+      CONFIG_FILE: product.yml
+    input_mapping:
+      product: VMware-NSX-T
+
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    params:
+      CONFIG_FILE: product.yml
+      VARS_FILES: {{pas_vars_files}}
+      OPS_FILES: {{pas_config_opsfile}}
+    input_mapping:
+      vars: platform-automation-config
+
+- name: configure-pas
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+      trigger: true
+      passed: [configure-director]
+    - get: pipeline-utilities
+    - get: tile-config-generator
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+    - get: cf
+      resource: pivnet-files
+      params:
+        product: cf
+    - get: cf-stemcell
+      resource: pivnet-files
+      params:
+        product: cf
+        stemcell: true
+
+  - aggregate:
+    - task: create-product-secrets
+      file: pipeline-utilities/tasks/create-product-secrets.yml
+      params:
+        PRODUCT_credhub_key_encryption_passwords_0/key: {{credhub_key_encryption_password}}
+        PRODUCT_networking_poe_ssl_certs_0/certificate: {{wildcard_pem}}
+        PRODUCT_networking_poe_ssl_certs_0/privatekey: {{wildcard_private_key}}
+        PRODUCT_uaa/service_provider_key_credentials/certificate: {{wildcard_pem}}
+        PRODUCT_uaa/service_provider_key_credentials/privatekey: {{wildcard_private_key}}
+
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      stemcell: cf-stemcell
+
+  - task: product-config
+    file: tile-config-generator/tasks/product-config-with-errands.yml
+    input_mapping:
+      product: cf
+
+  - task: upload-and-stage
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    params:
+      CONFIG_FILE: product.yml
+    input_mapping:
+      product: cf
+
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    params:
+      CONFIG_FILE: product.yml
+      VARS_FILES: {{pas_vars_files}}
+      OPS_FILES: {{pas_config_opsfile}}
+    input_mapping:
+      vars: platform-automation-config
+
+- name: configure-healthwatch
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+      passed: [configure-pas]
+      trigger: true
+    - get: pipeline-utilities
+    - get: tile-config-generator
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+    - get: healthwatch
+      resource: pivnet-files
+      params:
+        product: p-healthwatch
+    - get: healthwatch-stemcell
+      resource: pivnet-files
+      params:
+        product: p-healthwatch
+        stemcell: true
+  - aggregate:
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      stemcell: healthwatch-stemcell
+
+  - task: product-config
+    file: tile-config-generator/tasks/product-config-with-errands.yml
+    input_mapping:
+      product: healthwatch
+
+  - task: upload-and-stage
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    params:
+      CONFIG_FILE: product.yml
+    input_mapping:
+      product: healthwatch
+
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    params:
+      CONFIG_FILE: product.yml
+      VARS_FILES: {{healthwatch_vars_files}}
+      OPS_FILES: {{healthwatch_config_opsfile}}
+    input_mapping:
+      vars: platform-automation-config
+
+- name: apply-changes
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+      passed: [configure-healthwatch]
+      trigger: true
+    - get: pipeline-utilities
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+
+  - aggregate:
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_url}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: apply-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-changes.yml

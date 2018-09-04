@@ -1,0 +1,34 @@
+environment_root: environments/haas-108
+version_root: environments/haas-108/versions
+
+opsman_config_file: environments/haas-108/config/vsphere-opsman.yml
+opsman_vars_files: |
+  vars/environments/haas-108/opsman.yml
+  secrets/product.yml
+
+director_config_file: environments/haas-108/config/director.yml
+director_vars_files: |
+  vars/environments/haas-108/director.yml
+  secrets/product.yml
+
+pas_config_opsfile: |
+  diego_brain_additional_vm_extensions.yml
+  diego_cell_additional_vm_extensions.yml
+  mysql_proxy_additional_vm_extensions.yml
+  config/features/haproxy_forward_tls-disable.yml
+  config/network/3-az-configuration.yml
+pas_vars_files: |
+  config/product-default-vars.yml
+  config/resource-vars.yml
+  config/errand-vars.yml
+  vars/environments/haas-138/cf.yml
+  secrets/product.yml
+
+healthwatch_config_opsfile: |
+  config/features/boshtasks-disable.yml
+  config/network/3-az-configuration.yml
+healthwatch_vars_files: |
+  config/product-default-vars.yml
+  config/resource-vars.yml
+  config/errand-vars.yml
+  vars/environments/haas-138/p-healthwatch.yml
