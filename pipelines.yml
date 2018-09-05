@@ -9,4 +9,5 @@ pipelines:
   config_file: pipelines-src/haas-108-automation/pipeline.yml 
   vars_files:
   - pipelines-src/haas-108-automation/params.yml
+  - pipelines-src/haas-108-automation/secrets.yml
 

@@ -4,7 +4,7 @@ resource_types:
   type: docker-image
   source:
     repository: concourse/concourse-pipeline-resource
-    tag: 3
+    tag: b792af87749bba0d07b4b894b51b36c679895a28b03b06dcab1847ff5546e4f6
 resources:
 - name: concourse
   type: concourse-pipeline

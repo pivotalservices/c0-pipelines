@@ -5,9 +5,9 @@ concourse_source:
   - name: main
     username: ((concourse_main_username))
     password: ((concourse_main_password))
-  - name: haas-108
-    username: ((concourse_main_username))
-    password: ((concourse_main_password))
+#  - name: haas-108
+#    username: ((concourse_main_username))
+#    password: ((concourse_main_password))
 
 pipelines_source: 
   uri: ((pipelines_url))

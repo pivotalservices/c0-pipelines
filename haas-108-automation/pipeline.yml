@@ -1,4 +1,5 @@
-
+resource_types:
+- name: file-downloader
   type: docker-image
   source:
     repository: pivotalservices/file-downloader-resource
@@ -58,6 +59,7 @@ jobs:
         product: opsman
   - aggregate:
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -67,12 +69,14 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
     - task: create-opsman-secrets
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-product-secrets.yml
       params:
         PRODUCT_vcenter_password: {{vcenter_password}}
         PRODUCT_opsman_ssh_password: {{opsman_ssh_password}}
 
   - task: create-opsman-vm
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/create-vm.yml
     input_mapping:
@@ -99,6 +103,7 @@ jobs:
 
   - aggregate:
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -108,16 +113,20 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
   - task: configure-authentication
+    tags: [haas-108]
     image: platform-automation-image
     attempts: 20
     file: platform-automation-tasks/tasks/configure-authentication.yml
 
   - task: create-director-secrets
+    tags: [haas-108]
     file: pipeline-utilities/tasks/create-product-secrets.yml
     params:
       PRODUCT_vcenter_password: {{vcenter_password}}
+      PRODUCT_nsx_admin_password: {{nsx_admin_password}}
 
   - task: configure-director
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-director.yml
     input_mapping:
@@ -128,6 +137,7 @@ jobs:
       DIRECTOR_CONFIG_FILE: {{director_config_file}}
 
   - task: apply-director-changes
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/apply-director-changes.yml
 - name: configure-nsxt
@@ -152,6 +162,7 @@ jobs:
 
   - aggregate:
     - task: create-product-secrets
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-product-secrets.yml
       params:
         PRODUCT_credhub_key_encryption_passwords_0/key: {{credhub_key_encryption_password}}
@@ -161,6 +172,7 @@ jobs:
         PRODUCT_uaa/service_provider_key_credentials/privatekey: {{wildcard_private_key}}
 
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -170,11 +182,13 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
   - task: product-config
+    tags: [haas-108]
     file: tile-config-generator/tasks/product-config-with-errands.yml
     input_mapping:
       product: VMware-NSX-T
 
   - task: upload-and-stage
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-and-stage-product.yml
     params:
@@ -183,6 +197,7 @@ jobs:
       product: VMware-NSX-T
 
   - task: configure-product
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-product.yml
     params:
@@ -219,6 +234,7 @@ jobs:
 
   - aggregate:
     - task: create-product-secrets
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-product-secrets.yml
       params:
         PRODUCT_credhub_key_encryption_passwords_0/key: {{credhub_key_encryption_password}}
@@ -228,6 +244,7 @@ jobs:
         PRODUCT_uaa/service_provider_key_credentials/privatekey: {{wildcard_private_key}}
 
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -237,17 +254,20 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
   - task: upload-stemcell
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-stemcell.yml
     input_mapping:
       stemcell: cf-stemcell
 
   - task: product-config
+    tags: [haas-108]
     file: tile-config-generator/tasks/product-config-with-errands.yml
     input_mapping:
       product: cf
 
   - task: upload-and-stage
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-and-stage-product.yml
     params:
@@ -256,6 +276,7 @@ jobs:
       product: cf
 
   - task: configure-product
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-product.yml
     params:
@@ -291,6 +312,7 @@ jobs:
         stemcell: true
   - aggregate:
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -300,17 +322,20 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
   - task: upload-stemcell
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-stemcell.yml
     input_mapping:
       stemcell: healthwatch-stemcell
 
   - task: product-config
+    tags: [haas-108]
     file: tile-config-generator/tasks/product-config-with-errands.yml
     input_mapping:
       product: healthwatch
 
   - task: upload-and-stage
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/upload-and-stage-product.yml
     params:
@@ -319,6 +344,7 @@ jobs:
       product: healthwatch
 
   - task: configure-product
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/configure-product.yml
     params:
@@ -345,6 +371,7 @@ jobs:
 
   - aggregate:
     - task: create-auth-config
+      tags: [haas-108]
       file: pipeline-utilities/tasks/create-om-env.yml
       params:
         OPSMAN_TARGET: {{opsman_url}}
@@ -354,5 +381,6 @@ jobs:
         OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
 
   - task: apply-changes
+    tags: [haas-108]
     image: platform-automation-image
     file: platform-automation-tasks/tasks/apply-changes.yml

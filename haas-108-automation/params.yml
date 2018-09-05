@@ -12,9 +12,9 @@ director_vars_files: |
   secrets/product.yml
 
 pas_config_opsfile: |
-  diego_brain_additional_vm_extensions.yml
-  diego_cell_additional_vm_extensions.yml
-  mysql_proxy_additional_vm_extensions.yml
+  config/resource/diego_brain_additional_vm_extensions.yml
+  config/resource/diego_cell_additional_vm_extensions.yml
+  config/resource/mysql_proxy_additional_vm_extensions.yml
   config/features/haproxy_forward_tls-disable.yml
   config/network/3-az-configuration.yml
 pas_vars_files: |
