@@ -165,11 +165,7 @@ jobs:
       tags: [haas-108]
       file: pipeline-utilities/tasks/create-product-secrets.yml
       params:
-        PRODUCT_credhub_key_encryption_passwords_0/key: {{credhub_key_encryption_password}}
-        PRODUCT_networking_poe_ssl_certs_0/certificate: {{wildcard_pem}}
-        PRODUCT_networking_poe_ssl_certs_0/privatekey: {{wildcard_private_key}}
-        PRODUCT_uaa/service_provider_key_credentials/certificate: {{wildcard_pem}}
-        PRODUCT_uaa/service_provider_key_credentials/privatekey: {{wildcard_private_key}}
+        PRODUCT_nsx_auth/client_cert/nsx_api_client_cert/privatekey: {{nsxt_auth}}
 
     - task: create-auth-config
       tags: [haas-108]
@@ -202,8 +198,8 @@ jobs:
     file: platform-automation-tasks/tasks/configure-product.yml
     params:
       CONFIG_FILE: product.yml
-      VARS_FILES: {{pas_vars_files}}
-      OPS_FILES: {{pas_config_opsfile}}
+      VARS_FILES: {{nsxt_vars_files}}
+#      OPS_FILES: 
     input_mapping:
       vars: platform-automation-config
 
@@ -213,7 +209,7 @@ jobs:
   - aggregate:
     - get: platform-automation-config
       trigger: true
-      passed: [configure-director]
+      passed: [configure-nsxt]
     - get: pipeline-utilities
     - get: tile-config-generator
     - get: platform-automation-image

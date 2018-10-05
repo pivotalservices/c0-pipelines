@@ -12,16 +12,17 @@ director_vars_files: |
   secrets/product.yml
 
 pas_config_opsfile: |
-  config/resource/diego_brain_additional_vm_extensions.yml
-  config/resource/diego_cell_additional_vm_extensions.yml
-  config/resource/mysql_proxy_additional_vm_extensions.yml
+  config/features/container_networking_interface_plugin-external.yml
+  config/resource/diego_brain_nsx_security_groups.yml
+  config/resource/router_nsx_security_groups.yml
+  config/resource/mysql_proxy_nsx_security_groups.yml
   config/features/haproxy_forward_tls-disable.yml
   config/network/3-az-configuration.yml
 pas_vars_files: |
   config/product-default-vars.yml
   config/resource-vars.yml
   config/errand-vars.yml
-  vars/environments/haas-138/cf.yml
+  vars/environments/haas-108/cf.yml
   secrets/product.yml
 
 healthwatch_config_opsfile: |
@@ -31,4 +32,11 @@ healthwatch_vars_files: |
   config/product-default-vars.yml
   config/resource-vars.yml
   config/errand-vars.yml
-  vars/environments/haas-138/p-healthwatch.yml
+  vars/environments/haas-108/p-healthwatch.yml
+
+nsxt_vars_files: |
+  config/product-default-vars.yml
+  vars/environments/haas-108/nsxt.yml
+  secrets/product.yml
+
+
