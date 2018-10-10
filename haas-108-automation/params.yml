@@ -10,7 +10,8 @@ director_config_file: environments/haas-108/config/director.yml
 director_vars_files: |
   vars/environments/haas-108/director.yml
   secrets/product.yml
-
+pks_config_opsfile: |
+   config/resource/pivotal-container-service_nsx_security_groups.yml
 pas_config_opsfile: |
   config/features/container_networking_interface_plugin-external.yml
   config/resource/diego_brain_nsx_security_groups.yml

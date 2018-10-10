@@ -202,6 +202,76 @@ jobs:
 #      OPS_FILES: 
     input_mapping:
       vars: platform-automation-config
+- name: configure-pks
+  serial: true
+  plan:
+  - aggregate:
+    - get: platform-automation-config
+      trigger: true
+    - get: pipeline-utilities
+    - get: tile-config-generator
+    - get: platform-automation-image
+    - get: platform-automation-tasks
+      resource: pivnet-files
+      params:
+        product: platform-automation-tasks
+        unpack: true
+    - get: pks
+      resource: pivnet-files
+      params:
+        product: pks
+    - get: pks-stemcell
+      resource: pivnet-files
+      params:
+        product: pks
+        stemcell: true
+
+  - aggregate:
+    - task: create-product-secrets
+      file: pipeline-utilities/tasks/create-product-secrets.yml
+      params:
+        PRODUCT_cloud_provider/vsphere/vcenter_master_creds_password: {{vcenter_password}}
+        PRODUCT_cloud_provider/vsphere/vcenter_master_creds_identity: {{vcenter_user}}
+        PRODUCT_pivotal-container-service/pks_tls/certificate: {{api_cert_pem}}
+        PRODUCT_pivotal-container-service/pks_tls/privatekey: {{api_cert_key}}
+
+    - task: create-auth-config
+      file: pipeline-utilities/tasks/create-om-env.yml
+      params:
+        OPSMAN_TARGET: {{opsman_target}}
+        OPSMAN_SKIP_SSL_VALIDATION: {{opsman_skip_ssl_validation}}
+        OPSMAN_USERNAME: {{opsman_user}}
+        OPSMAN_PASSWORD: {{opsman_password}}
+        OPSMAN_DECRYPTION_PASSPHRASE: {{opsman_decryption_passphrase}}
+
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      stemcell: pks-stemcell
+
+  - task: product-config
+    file: tile-config-generator/tasks/product-config-with-errands.yml
+    input_mapping:
+      product: pks
+
+  - task: upload-and-stage
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    params:
+      CONFIG_FILE: product.yml
+    input_mapping:
+      product: pks
+
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    params:
+      CONFIG_FILE: product.yml
+      VARS_FILES: {{pks_vars_files}}
+      OPS_FILES: {{pks_config_opsfile}}
+    input_mapping:
+      vars: platform-automation-config
 
 - name: configure-pas
   serial: true
